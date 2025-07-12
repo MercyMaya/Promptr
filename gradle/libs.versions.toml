@@ -1,0 +1,35 @@
+# Version catalog – every library & plugin in one place
+# Naming: dashes become dots when referenced (e.g., androidx-core-ktx → libs.androidx.core.ktx)
+# CamelCase aliases stay camel (poiOoxmlLite → libs.poiOoxmlLite)
+
+[versions]
+agp              = "8.6.1"
+kotlin           = "1.9.0"
+
+androidx-core    = "1.16.0"
+appcompat        = "1.7.1"
+material         = "1.12.0"
+coroutines       = "1.7.3"
+slf4j            = "1.7.36"
+
+itext            = "5.5.10"
+poi              = "5.2.3"
+timber           = "5.0.1"
+
+[libraries]
+androidx-core-ktx          = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core" }
+androidx-appcompat         = { group = "androidx.appcompat", name = "appcompat",  version.ref = "appcompat" }
+material                   = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+
+itextpdf                   = { group = "com.itextpdf", name = "itextg", version.ref = "itext" }
+poi                        = { group = "org.apache.poi", name = "poi",            version.ref = "poi" }
+poiOoxml                   = { group = "org.apache.poi", name = "poi-ooxml",      version.ref = "poi" }
+slf4j-nop                  = { group = "org.slf4j", name = "slf4j-nop", version.ref = "slf4j" }
+
+timber                     = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
+
+[plugins]
+android-application        = { id = "com.android.application", version.ref = "agp" }
+kotlin-android             = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

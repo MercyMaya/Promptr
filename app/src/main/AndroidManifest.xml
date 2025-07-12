@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="com.mercymayagames.promptr"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:label="Promptr"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.Promptr">
+
+        <activity
+            android:name=".TeleprompterActivity"
+            android:screenOrientation="${screenOrientation}"
+            android:theme="@style/Theme.Promptr.Dark"/>
+
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="${screenOrientation}"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
