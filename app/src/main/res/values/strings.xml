@@ -1,3 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Promptr</string>
+
+    <!-- main screen -->
+    <string name="add_script">Select Script File</string>
+    <string name="add_file_prompt">Tap “＋” to add a script file</string>
+    <string name="long_press_hint">Long-press a file to remove it</string>
+    <string name="remove_title">Remove script</string>
+    <string name="remove_msg">Remove “%1$s” from the list?</string>
+    <string name="remove">Remove</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- teleprompter labels -->
+    <string name="speed_placeholder">Speed</string>
+    <string name="font_placeholder">Font</string>
+    <string name="speed_label">Speed: %1$s px</string>
+    <string name="font_label">Font: %1$d sp</string>
+    <string name="play_or_pause">Play or Pause</string>
+    <string name="play_now">Play now</string>
+    <string name="play_with_countdown">Play after countdown</string>
+    <string name="dark">DARK</string>
+    <string name="light">LIGHT</string>
+
+    <!-- accessibility -->
+    <string name="speed_slider_desc">Adjust scrolling speed</string>
+    <string name="font_slider_desc">Adjust font size</string>
+    <string name="countdown_three">3</string>
+
 </resources>

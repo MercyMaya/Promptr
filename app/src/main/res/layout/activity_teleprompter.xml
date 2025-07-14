@@ -24,14 +24,26 @@
             android:lineSpacingExtra="8dp" />
     </ScrollView>
 
-    <!-- overlay controls (auto-hides) -->
+    <!-- big countdown -->
+    <TextView
+        android:id="@+id/tv_countdown"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="@string/countdown_three"
+        android:gravity="center"
+        android:textSize="128sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <!-- overlay controls -->
     <LinearLayout
         android:id="@+id/overlay_controls"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="12dp"
-        android:background="#66000000">
+        android:background="#CC000000">
 
         <!-- speed row -->
         <LinearLayout
@@ -44,7 +56,7 @@
                 android:id="@+id/lbl_speed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Speed: 2"
+                android:text="@string/speed_placeholder"
                 android:textColor="@android:color/white"
                 android:layout_marginEnd="12dp" />
 
@@ -54,9 +66,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:valueFrom="1"
-                android:valueTo="20"
+                android:valueTo="40"
                 android:stepSize="1"
-                android:value="2"
+                android:value="5"
+                android:contentDescription="@string/speed_slider_desc"
                 app:labelBehavior="floating" />
         </LinearLayout>
 
@@ -72,7 +85,7 @@
                 android:id="@+id/lbl_font"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Font: 32sp"
+                android:text="@string/font_placeholder"
                 android:textColor="@android:color/white"
                 android:layout_marginEnd="12dp" />
 
@@ -85,6 +98,7 @@
                 android:valueTo="96"
                 android:stepSize="2"
                 android:value="32"
+                android:contentDescription="@string/font_slider_desc"
                 app:labelBehavior="floating" />
         </LinearLayout>
 
@@ -97,18 +111,27 @@
             android:paddingTop="8dp">
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fab_play_pause"
+                android:id="@+id/fab_play_now"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@android:drawable/ic_media_play"
                 android:tint="@android:color/white"
-                android:contentDescription="Play or Pause" />
+                android:contentDescription="@string/play_now" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_countdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@android:drawable/ic_popup_sync"
+                android:tint="@android:color/white"
+                android:contentDescription="@string/play_with_countdown"
+                android:layout_marginStart="24dp" />
 
             <Button
                 android:id="@+id/btn_theme"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="DARK"
+                android:text="@string/dark"
                 android:layout_marginStart="24dp" />
         </LinearLayout>
     </LinearLayout>

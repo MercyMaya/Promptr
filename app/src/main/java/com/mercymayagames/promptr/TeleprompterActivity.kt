@@ -7,148 +7,185 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
-import android.widget.TextView
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
+import com.google.android.material.slider.Slider
 import com.mercymayagames.promptr.databinding.ActivityTeleprompterBinding
 import kotlinx.coroutines.*
+import java.util.Locale
 
-/**
- * TeleprompterActivity
- *
- * Features:
- *   • Scroll speed slider (1–20 px / 16 ms)
- *   • Font size slider  (12–96 sp)
- *   • Play / Pause FAB
- *   • Dark / Light toggle
- *   • Auto-hides overlay after 3 s of no touch
- *
- * All user tweaks persist in Prefs for the next launch.
- */
 class TeleprompterActivity : AppCompatActivity() {
 
     companion object { const val EXTRA_FILE_URI = "file_uri" }
 
     private lateinit var ui: ActivityTeleprompterBinding
-    private val lblSpeed: TextView by lazy { ui.lblSpeed }
-    private val lblFont : TextView by lazy { ui.lblFont  }
 
-    /* ── runtime state ────────────────────────── */
-    private val scrollHandler = Handler(Looper.getMainLooper())
-    private var scrollSpeedPx = 2           // overwritten from Prefs
-    private var isPlaying = false
-    private val scrollRunnable = object : Runnable {
+    /* ───────── Scrolling engine ───────── */
+    private val handler = Handler(Looper.getMainLooper())
+    private var sliderUnits = 5                 // 1–40  ➜ 0.1–4.0 px / frame
+    private val pxPerTick get() = sliderUnits / 10f
+    private var accumulator = 0f
+    private var playing = false
+    private val ticker = object : Runnable {
         override fun run() {
-            if (isPlaying) {
-                ui.scrlScript.smoothScrollBy(0, scrollSpeedPx)
-                scrollHandler.postDelayed(this, 16) // ≈60 fps
+            if (playing) {
+                accumulator += pxPerTick
+                val delta = accumulator.toInt()
+                if (delta > 0) {
+                    ui.scrlScript.smoothScrollBy(0, delta)
+                    accumulator -= delta
+                }
+                handler.postDelayed(this, 16)
             }
         }
     }
 
-    /* ── lifecycle ───────────────────────────── */
+    /* ───────── Lifecycle ───────── */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ui = ActivityTeleprompterBinding.inflate(layoutInflater)
         setContentView(ui.root)
 
-        /* Load script (async) */
-        intent.getStringExtra(EXTRA_FILE_URI)
-            ?.let { loadScript(Uri.parse(it)) }
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        /* Restore prefs */
-        scrollSpeedPx = Prefs.loadSpeed(this).coerceIn(1, 20)
-        ui.speedSlider.value = scrollSpeedPx.toFloat()
-        lblSpeed.text = "Speed: $scrollSpeedPx"
+        intent.getStringExtra(EXTRA_FILE_URI)?.let { loadScript(Uri.parse(it)) }
+
+        sliderUnits = Prefs.loadSpeed(this).coerceIn(1, 40)
+        ui.speedSlider.value = sliderUnits.toFloat()
+        ui.lblSpeed.text = getString(R.string.speed_label, pxPerTick.format1())
 
         val fontSp = Prefs.loadFont(this).coerceIn(12f, 96f)
-        ui.txtScript.textSize = fontSp
         ui.fontSlider.value = fontSp
-        lblFont.text = "Font: ${fontSp.toInt()}sp"
+        ui.txtScript.textSize = fontSp
+        ui.lblFont.text = getString(R.string.font_label, fontSp.toInt())
 
         applyTheme(Prefs.isDark(this))
 
-        /* Callbacks */
-        ui.speedSlider.addOnChangeListener { _, v, fromUser ->
-            if (fromUser) {
-                scrollSpeedPx = v.toInt()
-                lblSpeed.text = "Speed: $scrollSpeedPx"
-                Prefs.saveSpeed(this, scrollSpeedPx)
+        /* speed slider */
+        ui.speedSlider.addOnChangeListener { _, v, user ->
+            if (user) {
+                sliderUnits = v.toInt()
+                ui.lblSpeed.text = getString(R.string.speed_label, pxPerTick.format1())
+                Prefs.saveSpeed(this, sliderUnits)
             }
         }
+        ui.speedSlider.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) { showOverlay() }
+            override fun onStopTrackingTouch(slider: Slider) { scheduleHide() }
+        })
 
-        ui.fontSlider.addOnChangeListener { _, v, fromUser ->
-            if (fromUser) {
+        /* font slider */
+        ui.fontSlider.addOnChangeListener { _, v, user ->
+            if (user) {
                 ui.txtScript.textSize = v
-                lblFont.text = "Font: ${v.toInt()}sp"
+                ui.lblFont.text = getString(R.string.font_label, v.toInt())
                 Prefs.saveFont(this, v)
             }
         }
+        ui.fontSlider.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) { showOverlay() }
+            override fun onStopTrackingTouch(slider: Slider) { scheduleHide() }
+        })
 
-        ui.fabPlayPause.setOnClickListener { togglePlayPause() }
-        ui.btnTheme.setOnClickListener { toggleTheme() }
+        /* play buttons */
+        ui.fabPlayNow.setOnClickListener { togglePlayPause() }
+        ui.fabCountdown.setOnClickListener { startCountdown() }
+        ui.btnTheme.setOnClickListener   { toggleTheme() }
 
-        ui.scrlScript.setOnTouchListener { _, e ->
-            if (e.action == MotionEvent.ACTION_DOWN) showControlsTemporarily()
+        /* tap script to reveal controls */
+        ui.scrlScript.setOnTouchListener { v, e ->
+            if (e.action == MotionEvent.ACTION_DOWN) {
+                v.performClick()
+                showOverlay(); scheduleHide()
+            }
             false
         }
-
-        togglePlayPause(forcePlay = true)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        scrollHandler.removeCallbacks(scrollRunnable)
+        handler.removeCallbacks(ticker)
     }
 
-    /* ── script I/O ──────────────────────────── */
+    /* ───────── Script loading ───────── */
     private fun loadScript(uri: Uri) = CoroutineScope(Dispatchers.IO).launch {
-        val text = FileTextExtractor.extractText(this@TeleprompterActivity, uri)
-        withContext(Dispatchers.Main) { ui.txtScript.text = text }
+        val txt = FileTextExtractor.extractText(this@TeleprompterActivity, uri)
+        withContext(Dispatchers.Main) { ui.txtScript.text = txt }
     }
 
-    /* ── play / pause ────────────────────────── */
+    /* ───────── Play / Pause ───────── */
     private fun togglePlayPause(forcePlay: Boolean? = null) {
-        val shouldPlay = forcePlay ?: !isPlaying
-        isPlaying = shouldPlay
-        ui.fabPlayPause.setImageResource(
-            if (isPlaying) android.R.drawable.ic_media_pause
+        val newState = forcePlay ?: !playing
+        playing = newState
+        ui.fabPlayNow.setImageResource(
+            if (newState) android.R.drawable.ic_media_pause
             else android.R.drawable.ic_media_play
         )
-        if (isPlaying) scrollHandler.post(scrollRunnable)
+        if (newState) {
+            handler.post(ticker)
+            scheduleHide()
+        } else {
+            handler.removeCallbacks(ticker)
+            showOverlay()
+        }
     }
 
-    /* ── overlay auto-hide ───────────────────── */
-    private val hideRunnable = Runnable { ui.overlayControls.visibility = View.INVISIBLE }
+    /* ───────── Countdown ───────── */
+    private fun startCountdown() {
+        if (playing) return
+        showOverlay()
+        ui.tvCountdown.apply {
+            text = "3"
+            scaleX = 1f; scaleY = 1f; alpha = 1f
+            isVisible = true
+        }
 
-    private fun showControlsTemporarily() {
+        CoroutineScope(Dispatchers.Main).launch {
+            for (n in 3 downTo 1) {
+                ui.tvCountdown.text = n.toString()
+                ui.tvCountdown.animate()
+                    .alpha(1f).scaleX(1f).scaleY(1f)
+                    .setDuration(120).withEndAction {
+                        ui.tvCountdown.animate()
+                            .alpha(0f).scaleX(4f).scaleY(4f)
+                            .setDuration(880).start()
+                    }.start()
+                delay(1000)
+            }
+            ui.tvCountdown.isVisible = false
+            togglePlayPause(forcePlay = true)
+        }
+    }
+
+    /* ───────── Overlay helpers ───────── */
+    private val hideRunnable = Runnable { ui.overlayControls.visibility = View.INVISIBLE }
+    private fun showOverlay() {
         ui.overlayControls.visibility = View.VISIBLE
         hideSystemBars()
         ui.overlayControls.removeCallbacks(hideRunnable)
-        ui.overlayControls.postDelayed(hideRunnable, 3000)
     }
+    private fun scheduleHide() = ui.overlayControls.postDelayed(hideRunnable, 3000)
 
-    /* ── theme toggle ────────────────────────── */
+    /* ───────── Theme ───────── */
     private fun toggleTheme() {
         val dark = !Prefs.isDark(this)
         Prefs.saveDark(this, dark)
         applyTheme(dark)
     }
-
     private fun applyTheme(dark: Boolean) {
         val bg = if (dark) Color.BLACK else Color.WHITE
         val fg = if (dark) Color.WHITE else Color.BLACK
-
         ui.root.setBackgroundColor(bg)
         ui.txtScript.setTextColor(fg)
-        lblSpeed.setTextColor(fg)
-        lblFont.setTextColor(fg)
-        ui.overlayControls.setBackgroundColor(
-            if (dark) 0x66000000 else 0x66FFFFFF
-        )
-        ui.btnTheme.text = if (dark) "LIGHT" else "DARK"
+        ui.lblSpeed.setTextColor(fg)
+        ui.lblFont.setTextColor(fg)
+        ui.tvCountdown.setTextColor(fg)
+        ui.overlayControls.setBackgroundColor(if (dark) 0x66000000 else 0x66FFFFFF)
+        ui.btnTheme.text = if (dark) getString(R.string.light) else getString(R.string.dark)
     }
 
-    /* ── immersive helpers ───────────────────── */
+    /* ───────── Immersive helper ───────── */
     private fun hideSystemBars() {
         window.insetsController?.let {
             it.hide(WindowInsets.Type.systemBars())
@@ -156,4 +193,8 @@ class TeleprompterActivity : AppCompatActivity() {
                 WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
+
+    /* ───────── util ───────── */
+    private fun Float.format1(): String =
+        String.format(Locale.US, "%.1f", this)
 }
