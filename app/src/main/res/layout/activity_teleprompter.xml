@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp">
 
+    <!-- scrolling script -->
     <ScrollView
         android:id="@+id/scrl_script"
         android:layout_width="match_parent"
@@ -16,15 +21,95 @@
             android:textColor="@android:color/white"
             android:textSize="32sp"
             android:padding="16dp"
-            android:lineSpacingExtra="8dp"/>
+            android:lineSpacingExtra="8dp" />
     </ScrollView>
 
-    <!-- Placeholder overlay; we’ll fill controls later -->
+    <!-- overlay controls (auto-hides) -->
     <LinearLayout
         android:id="@+id/overlay_controls"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#66000000"
-        android:visibility="visible"/>
+        android:padding="12dp"
+        android:background="#66000000">
+
+        <!-- speed row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/lbl_speed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Speed: 2"
+                android:textColor="@android:color/white"
+                android:layout_marginEnd="12dp" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/speed_slider"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:valueFrom="1"
+                android:valueTo="20"
+                android:stepSize="1"
+                android:value="2"
+                app:labelBehavior="floating" />
+        </LinearLayout>
+
+        <!-- font row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="8dp">
+
+            <TextView
+                android:id="@+id/lbl_font"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Font: 32sp"
+                android:textColor="@android:color/white"
+                android:layout_marginEnd="12dp" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/font_slider"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:valueFrom="12"
+                android:valueTo="96"
+                android:stepSize="2"
+                android:value="32"
+                app:labelBehavior="floating" />
+        </LinearLayout>
+
+        <!-- play / theme row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingTop="8dp">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_play_pause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@android:drawable/ic_media_play"
+                android:tint="@android:color/white"
+                android:contentDescription="Play or Pause" />
+
+            <Button
+                android:id="@+id/btn_theme"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DARK"
+                android:layout_marginStart="24dp" />
+        </LinearLayout>
+    </LinearLayout>
 </FrameLayout>
